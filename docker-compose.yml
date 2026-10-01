@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: strativa
+      POSTGRES_USER: strativa
+      POSTGRES_PASSWORD: strativa
+    ports:
+      - "5432:5432"
+    volumes:
+      - strativa_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U strativa -d strativa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://strativa:strativa@db:5432/strativa
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "python init_db.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+volumes:
+  strativa_pgdata:
